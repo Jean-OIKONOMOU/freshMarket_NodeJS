@@ -46,13 +46,14 @@ const server = http.createServer((req, res) => {
     const cardsHtml = dataObj
       .map((el) => replaceTemplate(tempCard, el))
       .join("");
-    const output = tempOverview.replace("{%PRODUCT_CARDS%}", cardsHtml);
+    const output = tempOverview.replace(/{%PRODUCT_CARDS%}/g, cardsHtml);
     res.end(output);
-  } else if (pathName.includes("product")) {
+  } else if (pathName.includes("product?id=")) {
+    // /product\?id=\d/g
     let urlParamId = pathName.split("=")[1];
-    let keyCount  = Object.keys(dataObj).length;
-    if (urlParamId >= 0 && urlParamId <= keyCount) {     
-      res.writeHead(200, {'Content-Type' : 'text/html'});
+    let keyCount = Object.keys(dataObj).length;
+    if (urlParamId >= 0 && urlParamId <= keyCount) {
+      res.writeHead(200, { "Content-Type": "text/html" });
       const singleCardHtml = replaceTemplate(tempProduct, dataObj[urlParamId]);
       //const output = tempProduct.replace("{%PRODUCT_CARDS%}", singleCardHtml);
       console.log(dataObj[urlParamId]);
@@ -60,7 +61,7 @@ const server = http.createServer((req, res) => {
       //res.end("Id is = " + id + " and number of IDs is " + (keyCount-1));
     } else {
       res.writeHead(404, {
-        "Content-Type": "text/html"
+        "Content-Type": "text/html",
       });
       res.end("<h1>404</h1>");
     }
