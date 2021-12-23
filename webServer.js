@@ -2,22 +2,7 @@ const http = require("http");
 const https = require("https");
 const url = require("url");
 const fs = require("fs");
-
-const replaceTemplate = (temp, product) => {
-  let output = temp.replace(/{%PRODUCTNAME%}/g, product.productName);
-  output = output.replace(/{%IMAGE%}/g, product.image);
-  output = output.replace(/{%ORIGIN%}/g, product.from);
-  output = output.replace(/{%NUTRIENTS%}/g, product.nutrients);
-  output = output.replace(/{%QUANTITY%}/g, product.quantity);
-  output = output.replace(/{%DESCRIPTION%}/g, product.description);
-  output = output.replace(/{%PRICE%}/g, product.price);
-  output = output.replace(/{%ID%}/g, product.id);
-  if (!product.organic) {
-    output = output.replace(/{%NOT_ORGANIC%}/g, "not-organic");
-  }
-  return output;
-};
-
+const replaceTemplate = require("./modules/replacetemplate");
 // Getting and storing the templates
 const tempOverview = fs.readFileSync(
   `${__dirname}/templates/template-overview.html`,
@@ -39,33 +24,29 @@ const dataObj = JSON.parse(data);
 // this is the event loop, this must be/contain async as this will be executed plenty of times. It's problematic that something we call all the time isn't async as it can easily block our application's main NodeJS thread.
 const server = http.createServer((req, res) => {
   //res.end("Hello from the server " + req.url);
-  console.log(req.url);
-  const pathName = req.url;
-  if (pathName === "/overview" || pathName === "/") {
+  const { query, pathname } = url.parse(req.url, true);
+
+  if (pathname === "/overview" || pathname === "/") {
     res.writeHead(200, { "Content-Type": "text/html" });
     const cardsHtml = dataObj
       .map((el) => replaceTemplate(tempCard, el))
       .join("");
     const output = tempOverview.replace(/{%PRODUCT_CARDS%}/g, cardsHtml);
     res.end(output);
-  } else if (pathName.includes("product?id=")) {
-    // /product\?id=\d/g
-    let urlParamId = pathName.split("=")[1];
+  } else if (pathname === "/product") {
+    const product = dataObj[query.id];
     let keyCount = Object.keys(dataObj).length;
-    if (urlParamId >= 0 && urlParamId <= keyCount) {
-      res.writeHead(200, { "Content-Type": "text/html" });
-      const singleCardHtml = replaceTemplate(tempProduct, dataObj[urlParamId]);
-      //const output = tempProduct.replace("{%PRODUCT_CARDS%}", singleCardHtml);
-      console.log(dataObj[urlParamId]);
-      res.end(singleCardHtml);
-      //res.end("Id is = " + id + " and number of IDs is " + (keyCount-1));
-    } else {
+    if (query.id < 0 || query.id > keyCount - 1) {
       res.writeHead(404, {
         "Content-Type": "text/html",
       });
       res.end("<h1>404</h1>");
+    } else {
+      res.writeHead(200, { "Content-Type": "text/html" });
+      const singleCardHtml = replaceTemplate(tempProduct, product);
+      res.end(singleCardHtml);
     }
-  } else if (pathName === "/api") {
+  } else if (pathname === "/api") {
     res.writeHead(200, { "Content-Type": "text/json" });
     res.end(data);
   } else {
