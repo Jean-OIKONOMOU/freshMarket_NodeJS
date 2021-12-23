@@ -48,8 +48,22 @@ const server = http.createServer((req, res) => {
       .join("");
     const output = tempOverview.replace("{%PRODUCT_CARDS%}", cardsHtml);
     res.end(output);
-  } else if (pathName === "/product") {
-    res.end("this is the PRODUCT");
+  } else if (pathName.includes("product")) {
+    let urlParamId = pathName.split("=")[1];
+    let keyCount  = Object.keys(dataObj).length;
+    if (urlParamId >= 0 && urlParamId <= keyCount) {     
+      res.writeHead(200, {'Content-Type' : 'text/html'});
+      const singleCardHtml = replaceTemplate(tempProduct, dataObj[urlParamId]);
+      //const output = tempProduct.replace("{%PRODUCT_CARDS%}", singleCardHtml);
+      console.log(dataObj[urlParamId]);
+      res.end(singleCardHtml);
+      //res.end("Id is = " + id + " and number of IDs is " + (keyCount-1));
+    } else {
+      res.writeHead(404, {
+        "Content-Type": "text/html"
+      });
+      res.end("<h1>404</h1>");
+    }
   } else if (pathName === "/api") {
     res.writeHead(200, { "Content-Type": "text/json" });
     res.end(data);
